@@ -18,7 +18,6 @@ yr = squeeze(dg(:,1));
 %TMIN      ivar = 3
 %rainfall  ivar = 4
 name_var = {'sr','tmax','tmin','rainfall'}
-ivar = 4;
 
 %no fertilizer       icase = 1
 %high fertilizer     icase = 2
@@ -35,7 +34,34 @@ ith_ana = 2;
 
 %-------------------------------------------------------------------
 
-tgt_var = squeeze(all_data(:,ivar+4,istn));
+xx =  squeeze(all_data(:,5:8,:));
+MZYD = squeeze(all_data(:,2:4,:));
+
+
+
+MEAN = squeeze(mean(xx));
+MEANY = squeeze(mean(MZYD));
+
+for in = 1:size(xx,1);
+    xxa(in,:,:) = squeeze(xx(in,:,:)) - MEAN;
+    yya(in,:,:) = squeeze(MZYD(in,:,:)) - MEANY;
+end
+
+
+for iistn = 1:4
+    for icase = 1:3
+        y = squeeze(yya(:,icase,iistn));
+        X = squeeze(xxa(:,:,iistn));
+        b = regress(y,X);
+        yp(:,icase,iistn) = b'*X' + MEANY(icase,iistn);
+        temp = corrcoef(b'*X',y);
+        R_MULVAR(icase,iistn) = temp(1,2);
+    end
+end
+
+clear xx
+
+tgt_var = squeeze(yp(:,icase,istn));
 stn = {'Dangishta','Kudmi','Reem','Gaita'};
 
 scrsz = get(0,'ScreenSize');
@@ -47,7 +73,7 @@ set(gcf,'color','w')
 xlim([yr(1) yr(end)])
 grid on
 %ylabel(['MJJASO total rainfall(mm)']);
-ylabel(['All year round' name_var(ivar)]);
+ylabel(['All year round' 'mult var']);
 xlabel('Years')
 legend(stn)
 
@@ -83,7 +109,7 @@ set(gca,'xtick',yr)
 rotateXLabels( gca(), 45 )
 xlim([yr(1) yr(end)])
 grid on
-ylabel(['All year round' name_var(ivar)]);
+ylabel(['All year round' 'mult var']);
 xlabel('Years')
 legend(stn(istn))
 subplot(3,1,2)
@@ -95,7 +121,7 @@ set(gca,'fontsize',30)
 set(gcf,'color','w')
 xlim([yr(1) yr(end)])
 grid on
-ylabel([name_var(ivar) 'YEARS - 1979']);
+ylabel(['mult var' 'YEARS - 1979']);
 xlabel('Years')
 legend('Target Year: 1979')
 for iana = 1:NUM_ANA
@@ -109,7 +135,7 @@ set(gca,'xtick',yr)
 rotateXLabels( gca(), 45 )
 
 subplot(3,1,3)
-plot(yr,squeeze(tgt_var),'--g','linewidth',3)
+plot(yr,tgt_var,'--g','linewidth',3)
 hold on
 clear x1 x2
 for iyr = 1:length(yr)
@@ -131,7 +157,7 @@ xlim([yr(1) yr(end)])
 grid on
 %ylabel(['Spread of Analog']);
 xlabel('Years')
-ylabel(['All year round' name_var(ivar)]);
+ylabel(['All year round' 'mult var']);
 
 
 figure('Position',[1 scrsz(4)/2 scrsz(3) scrsz(4)*9/10])
@@ -148,8 +174,8 @@ plot([MEANc MEANc],[max(MEAN) min(MEAN)],'r','linewidth',3)
 set(gca,'fontsize',30)
 set(gcf,'color','w')
 axis('square')
-xlabel(['Target' name_var(ivar)])
-ylabel(['Analog mean' name_var(ivar)])
+xlabel(['Target' 'mult var'])
+ylabel(['Analog mean' 'mult var'])
 title(sprintf('R=%2.2f',temp(1,2)),'fontsize',40)
 grid on
 subplot(1,2,2)
@@ -159,8 +185,8 @@ scatter(tgt_var,MEAN'-tgt_var,100,'filled')
 MEAN = MEAN'-tgt_var;
 axis('equal')
 set(gca,'fontsize',30)
-xlabel(['Target' name_var(ivar)])
-ylabel(['Analog mean - Target' name_var(ivar)])
+xlabel(['Target' 'mult var'])
+ylabel(['Analog mean - Target' 'mult var'])
 plot([MEANc+STD MEANc+STD],[max(MEAN) min(MEAN)],'--r','linewidth',3)
 plot([MEANc-STD MEANc-STD],[max(MEAN) min(MEAN)],'--r','linewidth',3)
 plot([MEANc MEANc],[max(MEAN) min(MEAN)],'r','linewidth',3)
@@ -218,11 +244,17 @@ for m = 1:NUM_ANA
     
 end
 
-tmp1 = 0;
+clear tmp1
+mean_tmp2 = mean(tmp2);
+tmp2a = tmp2 - mean_tmp2;
 for m = 1:NUM_ANA
     m
-    tmp1 = tmp1+squeeze(all_data(squeeze(ANA(:,m)-1978),icase+1,istn));
-    temp = corrcoef(tmp1,tmp2);
+    tmp1(:,m) = squeeze(all_data(squeeze(ANA(:,m)-1978),icase+1,istn));
+    mean_tmp1 = mean(tmp1);
+    tmp1a = tmp1 - repmat(mean_tmp1,size(tmp1,1),1);
+    b = regress(tmp2a,tmp1a);
+    tmp2ap = b'*tmp1a';
+    temp = corrcoef(tmp2ap,tmp2a);
     RRR(m) = temp(1,2);
 end
 close all
@@ -240,7 +272,7 @@ xlim([1 NUM_ANA])
 set(gca,'xtick',1:NUM_ANA)
 grid on
 set(gcf,'color','w')
-title([stn(istn) name_var(ivar) ft_case(icase)])
+title([stn(istn) 'mult var' ft_case(icase)])
 % pause
 % close all
 

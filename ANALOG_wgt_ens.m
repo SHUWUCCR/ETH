@@ -18,7 +18,7 @@ yr = squeeze(dg(:,1));
 %TMIN      ivar = 3
 %rainfall  ivar = 4
 name_var = {'sr','tmax','tmin','rainfall'}
-ivar = 4;
+ivar = 2;
 
 %no fertilizer       icase = 1
 %high fertilizer     icase = 2
@@ -27,7 +27,7 @@ ft_case = {'no FT','high FT','low FT'}
 icase = 1;
 
 % stn = {'Dangishta','Kudmi','Reem','Gaita'};
-istn = 4;
+istn = 1;
 
 % number of analogs
 NUM_ANA = 10;
@@ -218,11 +218,17 @@ for m = 1:NUM_ANA
     
 end
 
-tmp1 = 0;
+clear tmp1
+mean_tmp2 = mean(tmp2);
+tmp2a = tmp2 - mean_tmp2;
 for m = 1:NUM_ANA
     m
-    tmp1 = tmp1+squeeze(all_data(squeeze(ANA(:,m)-1978),icase+1,istn));
-    temp = corrcoef(tmp1,tmp2);
+    tmp1(:,m) = squeeze(all_data(squeeze(ANA(:,m)-1978),icase+1,istn));
+    mean_tmp1 = mean(tmp1);
+    tmp1a = tmp1 - repmat(mean_tmp1,size(tmp1,1),1);
+    b = regress(tmp2a,tmp1a);
+    tmp2ap = b'*tmp1a';
+    temp = corrcoef(tmp2ap,tmp2a);
     RRR(m) = temp(1,2);
 end
 close all
